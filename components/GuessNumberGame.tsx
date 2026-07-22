@@ -15,11 +15,23 @@ import {
   restartGuessNumberGame,
 } from "@/services/game.service";
 
+interface Player {
+  id: string;
+  uid: string;
+  name: string;
+  avatar: string;
+  isHost: boolean;
+  ready: boolean;
+  score: number;
+}
+
 interface Props {
   min: number;
   max: number;
   winner: string;
   isHost: boolean;
+  roomCode: string;
+  currentPlayer: Player | null;
 }
 
 interface Guess {
@@ -33,9 +45,11 @@ export default function GuessNumberGame({
   max,
   winner,
   isHost,
+  roomCode,
+  currentPlayer,
 }: Props) {
   const params = useParams();
-  const roomCode = params.roomCode as string;
+  const actualRoomCode = (params.roomCode as string) || roomCode;
 
   const [guess, setGuess] = useState("");
   const [loading, setLoading] = useState(false);
@@ -43,7 +57,7 @@ export default function GuessNumberGame({
 
   useEffect(() => {
     const q = query(
-      collection(db, "rooms", roomCode, "guesses"),
+      collection(db, "rooms", actualRoomCode, "guesses"),
       orderBy("createdAt", "desc")
     );
 
@@ -57,7 +71,7 @@ export default function GuessNumberGame({
     });
 
     return () => unsubscribe();
-  }, [roomCode]);
+  }, [actualRoomCode]);
 
   async function handleGuess() {
     if (!guess.trim()) {
@@ -80,10 +94,10 @@ export default function GuessNumberGame({
     try {
       setLoading(true);
 
-      const playerName =
-        localStorage.getItem("playerName") || "玩家";
+      // 使用 Firebase 中的玩家名稱，而不是 localStorage
+      const playerName = currentPlayer?.name || "玩家";
 
-      await guessNumber(roomCode, playerName, number);
+      await guessNumber(actualRoomCode, playerName, number);
 
       setGuess("");
     } catch (error) {
@@ -96,7 +110,7 @@ export default function GuessNumberGame({
 
   async function handleRestart() {
     try {
-      await restartGuessNumberGame(roomCode);
+      await restartGuessNumberGame(actualRoomCode);
     } catch (error) {
       console.error(error);
       alert("重新開始失敗");
@@ -106,7 +120,6 @@ export default function GuessNumberGame({
   if (winner) {
     return (
       <div className="mx-auto mt-10 max-w-2xl rounded-2xl bg-zinc-900 p-10">
-
         <div className="text-center">
           <h1 className="text-6xl">🎉</h1>
 
@@ -114,14 +127,12 @@ export default function GuessNumberGame({
             {winner} 猜中了！
           </h2>
 
-          <p className="mt-4 text-gray-400">
-            本局遊戲結束
-          </p>
+          <p className="mt-4 text-gray-400">本局遊戲結束</p>
 
           {isHost ? (
             <button
               onClick={handleRestart}
-              className="mt-8 w-full rounded-xl bg-purple-600 py-4 text-2xl font-bold hover:bg-purple-500"
+              className="mt-8 w-full rounded-xl bg-purple-600 py-4 text-2xl font-bold hover:bg-purple-500 transition"
             >
               🔄 再玩一次
             </button>
@@ -133,14 +144,10 @@ export default function GuessNumberGame({
         </div>
 
         <div className="mt-10 rounded-xl bg-zinc-800 p-5">
-          <h3 className="mb-4 text-2xl font-bold">
-            📜 本局猜測紀錄
-          </h3>
+          <h3 className="mb-4 text-2xl font-bold">📜 本局猜測紀錄</h3>
 
           {guesses.length === 0 ? (
-            <p className="text-gray-400">
-              尚無猜測紀錄
-            </p>
+            <p className="text-gray-400">尚無猜測紀錄</p>
           ) : (
             guesses.map((item) => (
               <div
@@ -153,32 +160,30 @@ export default function GuessNumberGame({
             ))
           )}
         </div>
-
       </div>
     );
   }
 
   return (
     <div className="mx-auto mt-10 max-w-2xl rounded-2xl bg-zinc-900 p-8">
+      <h1 className="text-center text-5xl font-bold">🎲 猜數字</h1>
 
-      <h1 className="text-center text-5xl font-bold">
-        🎲 猜數字
-      </h1>
-
-      <p className="mt-8 text-center text-gray-400">
-        目前範圍
-      </p>
+      <p className="mt-8 text-center text-gray-400">目前範圍</p>
 
       <h2 className="mt-3 text-center text-6xl font-bold text-green-400">
         {min} ~ {max}
       </h2>
 
       <div className="mt-10">
-
         <input
           type="number"
           value={guess}
           onChange={(e) => setGuess(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              handleGuess();
+            }
+          }}
           placeholder="請輸入數字"
           className="w-full rounded-xl bg-zinc-800 p-4 text-center text-2xl outline-none"
         />
@@ -186,23 +191,17 @@ export default function GuessNumberGame({
         <button
           onClick={handleGuess}
           disabled={loading}
-          className="mt-6 w-full rounded-xl bg-purple-600 py-4 text-2xl font-bold hover:bg-purple-500 disabled:bg-zinc-700"
+          className="mt-6 w-full rounded-xl bg-purple-600 py-4 text-2xl font-bold hover:bg-purple-500 disabled:bg-zinc-700 disabled:cursor-not-allowed transition"
         >
           {loading ? "送出中..." : "猜！"}
         </button>
-
       </div>
 
       <div className="mt-10 rounded-xl bg-zinc-800 p-5">
-
-        <h3 className="mb-4 text-2xl font-bold">
-          📜 猜測紀錄
-        </h3>
+        <h3 className="mb-4 text-2xl font-bold">📜 猜測紀錄</h3>
 
         {guesses.length === 0 ? (
-          <p className="text-gray-400">
-            尚無猜測紀錄
-          </p>
+          <p className="text-gray-400">尚無猜測紀錄</p>
         ) : (
           guesses.map((item) => (
             <div
@@ -214,9 +213,7 @@ export default function GuessNumberGame({
             </div>
           ))
         )}
-
       </div>
-
     </div>
   );
 }
