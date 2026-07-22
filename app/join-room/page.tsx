@@ -4,19 +4,16 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { useAuth } from "@/context/AuthContext";
+import { joinRoom } from "@/services/room.service";
 
-import { createRoom } from "@/services/room.service";
-
-export default function CreateRoomPage() {
+export default function JoinRoomPage() {
   const router = useRouter();
 
   const { user } = useAuth();
 
-  const [roomName, setRoomName] =
-    useState("");
+  const [roomCode, setRoomCode] = useState("");
 
-  const [loading, setLoading] =
-    useState(false);
+  const [loading, setLoading] = useState(false);
 
   if (!user) {
     return (
@@ -26,26 +23,21 @@ export default function CreateRoomPage() {
     );
   }
 
-  async function handleCreate() {
-    if (!roomName.trim()) {
-      alert("請輸入房間名稱");
+  async function handleJoin() {
+    if (!roomCode.trim()) {
+      alert("請輸入房號");
       return;
     }
 
     try {
       setLoading(true);
 
-      const roomCode =
-        await createRoom(
-          roomName.trim()
-        );
+      await joinRoom(roomCode.trim());
 
-      router.push(
-        `/room/${roomCode}`
-      );
+      router.push(`/room/${roomCode.trim()}`);
     } catch (err) {
-      alert("建立房間失敗");
       console.error(err);
+      alert("加入房間失敗");
     } finally {
       setLoading(false);
     }
@@ -59,10 +51,7 @@ export default function CreateRoomPage() {
         <div className="mb-8 flex items-center gap-4">
 
           <img
-            src={
-              user.photoURL ||
-              "/avatar.png"
-            }
+            src={user.photoURL || "/avatar.png"}
             className="h-16 w-16 rounded-full"
             alt=""
           />
@@ -70,15 +59,11 @@ export default function CreateRoomPage() {
           <div>
 
             <div className="text-xl font-bold">
-
               {user.displayName}
-
             </div>
 
             <div className="text-gray-400">
-
-              房主
-
+              使用 LINE 身分加入
             </div>
 
           </div>
@@ -86,32 +71,22 @@ export default function CreateRoomPage() {
         </div>
 
         <h1 className="mb-6 text-3xl font-bold">
-
-          🎉 建立房間
-
+          🚪 加入房間
         </h1>
 
         <input
-          value={roomName}
-          onChange={(e) =>
-            setRoomName(
-              e.target.value
-            )
-          }
-          placeholder="房間名稱"
+          value={roomCode}
+          onChange={(e) => setRoomCode(e.target.value)}
+          placeholder="請輸入六位數房號"
           className="mb-6 w-full rounded-xl bg-zinc-800 p-4 outline-none"
         />
 
         <button
           disabled={loading}
-          onClick={handleCreate}
-          className="w-full rounded-xl bg-purple-600 py-4 text-xl font-bold hover:bg-purple-500 disabled:opacity-50"
+          onClick={handleJoin}
+          className="w-full rounded-xl bg-green-600 py-4 text-xl font-bold hover:bg-green-500 disabled:opacity-50"
         >
-
-          {loading
-            ? "建立中..."
-            : "建立房間"}
-
+          {loading ? "加入中..." : "加入房間"}
         </button>
 
       </div>

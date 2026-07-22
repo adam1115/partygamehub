@@ -3,12 +3,17 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
+import { useAuth } from "@/context/AuthContext";
+
 import SplashScreen from "@/components/SplashScreen";
 import Navbar from "@/components/Navbar";
 import GameCard from "@/components/GameCard";
+import LoginButton from "@/components/LoginButton";
 
 export default function Home() {
   const [showSplash, setShowSplash] = useState(true);
+
+  const { user } = useAuth();
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -38,23 +43,33 @@ export default function Home() {
 
               <p className="mt-6 max-w-2xl text-xl text-gray-300">
                 與朋友一起玩最有趣的派對遊戲，
+                <br />
                 建立房間、邀請好友，
+                <br />
                 隨時開始一場歡樂派對！
               </p>
 
-              <div className="mt-12 flex flex-wrap justify-center gap-5">
+              {!user ? (
+                <div className="mt-12">
+                  <LoginButton />
+                </div>
+              ) : (
+                <div className="mt-12 flex flex-wrap justify-center gap-5">
 
-                <Link href="/create-room">
-                  <button className="rounded-xl bg-purple-600 px-8 py-4 text-lg font-bold transition hover:scale-105 hover:bg-purple-500">
-                    🎉 建立房間
-                  </button>
-                </Link>
+                  <Link href="/create-room">
+                    <button className="rounded-xl bg-purple-600 px-8 py-4 text-lg font-bold transition hover:scale-105 hover:bg-purple-500">
+                      🎉 建立房間
+                    </button>
+                  </Link>
 
-                <button className="rounded-xl bg-green-600 px-8 py-4 text-lg font-bold transition hover:scale-105 hover:bg-green-500">
-                  🚪 加入房間
-                </button>
+                  <Link href="/join-room">
+                    <button className="rounded-xl bg-green-600 px-8 py-4 text-lg font-bold transition hover:scale-105 hover:bg-green-500">
+                      🚪 加入房間
+                    </button>
+                  </Link>
 
-              </div>
+                </div>
+              )}
 
             </section>
 
@@ -73,7 +88,7 @@ export default function Home() {
                 />
 
                 <GameCard
-                  emoji="🧠"
+                  emoji="🕵️"
                   title="誰是臥底"
                   description="每個人拿到不同詞語，找出真正的臥底。"
                 />
@@ -81,7 +96,7 @@ export default function Home() {
                 <GameCard
                   emoji="😂"
                   title="真心話大冒險"
-                  description="聚會最受歡迎的經典遊戲，保證笑聲不斷。"
+                  description="聚會最受歡迎的經典遊戲。"
                 />
 
               </div>
@@ -89,10 +104,8 @@ export default function Home() {
             </section>
 
           </main>
-
         </>
       )}
-
     </>
   );
 }
